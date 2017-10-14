@@ -2,6 +2,7 @@
 # PD_I10_TEST_SIZE = 100
 
 P_D <- 0.15
+P_ND <- 1 - P_D
 
 P_B_D <- c(0.80,0.64,0.86,0.80,0.74,0.76,0.77,0.84,0.85,0.75)
 P_B_ND <- c(0.20,0.16,0.07,0.09,0.18,0.13,0.17,0.14,0.21,0.08)
@@ -63,12 +64,11 @@ find_pD_I10 <- function(I10, num_of_desired_experiments=0) {
     if(I10[test_num]) {
       pTest_D  <- P_B[["d"]][test_num]
       pTest_ND <- P_B[["nd"]][test_num]
-      pTest <- pTest_D * P_D + pTest_ND * (1-P_D)
     } else {
       pTest_D  <- (1 - P_B[["d"]][test_num])
       pTest_ND <- (1 - P_B[["nd"]][test_num])
-      pTest <- pTest_D * P_D + pTest_ND * (1-P_D)
     }
+    pTest <- pTest_D * P_D + pTest_ND * P_ND
     pD_I10 <- pD_I10 * (pTest_D / pTest)
   }
   return(pD_I10)
@@ -109,7 +109,9 @@ calculate_seqs_pD_I10 <- function(seqs_I10) {
                    seq(col,col,length.out=dim(seqs_I10)[ROWS])), 
                  dim=c(dim(seqs_I10)[ROWS],2))
     I10 <- seqs_I10[idx]
+    print(I10)
     pD_I10 <- find_pD_I10(I10)
+    print(pD_I10)
     seqs_pD_I10 <- c(seqs_pD_I10, pD_I10)
   }
   
@@ -117,6 +119,8 @@ calculate_seqs_pD_I10 <- function(seqs_I10) {
 }
 
 calculate_f <- function(is_defective, seqs_pD_I10, cutoff) {
+  print("is defective?")
+  print(is_defective)
   num_of_errors <- 0
   for (pD_I10 in seqs_pD_I10) {
     if (pD_I10 > cutoff) { # will not ship
@@ -129,31 +133,34 @@ calculate_f <- function(is_defective, seqs_pD_I10, cutoff) {
       }
     }
   }
+  print("num of errors:")
+  print(num_of_errors)
   f <- num_of_errors / length(seqs_pD_I10)
   return(f)
 }
 
-calculate_Ja <- function(fd, fnd, cutoff) {
-  Ja <- fnd*(1-P_D) + fd*P_D
-  return(Ja)
-}
-
-EXP_SIZE = 500
+EXP_SIZE = 5
 # Part 1
-seqs_I10_assuming_d <- generate_seqs_I10(is_defective=TRUE, N=EXP_SIZE)
-seqs_pD_I10 <- calculate_seqs_pD_I10(seqs_I10_assuming_d)
-# Part 2 (Estimate shipped given defective)
-fd <- calculate_f(is_defective=TRUE, seqs_pD_I10, cutoff=a)
+seqs_I10_D <- generate_seqs_I10(is_defective=TRUE, N=EXP_SIZE)
+seqs_pD_I10 <- calculate_seqs_pD_I10(seqs_I10_D)
 
 # Part 3
-seqs_I10_assuming_nd <- generate_seqs_I10(is_defective=FALSE, N=EXP_SIZE)
-seqs_pD_I10 <- calculate_seqs_pD_I10(seqs_I10_assuming_nd)
-# Part 4 (Estimate not shipped given non-defective)
-fnd <- calculate_f(is_defective=FALSE, seqs_pD_I10, cutoff=a)
+seqs_I10_ND <- generate_seqs_I10(is_defective=FALSE, N=EXP_SIZE)
+seqs_pD_I10 <- calculate_seqs_pD_I10(seqs_I10_ND)
 
 # Part 5
-for (a in seq(from=0.01,to=0.99,by=0.01)) {
-  Ja = calculate_Ja(fd, fnd, cutoff=a)
-  print(Ja)
-}
+# for (a in seq(from=0.01,to=0.99,by=0.2)) {
+#   # Part 2 (Estimate shipped given defective)
+#   print("a:")
+#   print(a)
+#   fd <- calculate_f(is_defective=TRUE, seqs_pD_I10, cutoff=a)
+#   print("fd:")
+#   print(fd)
+#   # Part 4 (Estimate not shipped given non-defective)
+#   fnd <- calculate_f(is_defective=FALSE, seqs_pD_I10, cutoff=a)
+#   print("fnd:")
+#   print(fnd)
+#   Ja <- fnd*(1-P_D) + fd*P_D
+#   print("\n\n")
+# }
 
